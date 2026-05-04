@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Add a fallback loader that retries failed image URLs via fetched blob object URLs.
+- Improve compatibility with attachment-style object storage URLs in image gallery mode.
+
 ## 0.1.2
 
 - Fix declaration output so `dist/index.d.ts` exports `ImageInspector` and public types.

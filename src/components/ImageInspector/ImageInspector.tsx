@@ -66,7 +66,18 @@ export function ImageInspector(props: ImageInspectorProps) {
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
   const [brokenImageIndex, setBrokenImageIndex] = useState<number | null>(null)
+  const [resolvedSrcByOriginal, setResolvedSrcByOriginal] = useState<Record<string, string>>({})
+  const objectUrlByOriginalRef = useRef<Record<string, string>>({})
+  const resolvingOriginalsRef = useRef<Record<string, boolean>>({})
   const hasBrokenImage = brokenImageIndex === safeActiveIndex
+  const displayImages = useMemo(
+    () =>
+      images.map((image) => ({
+        ...image,
+        src: resolvedSrcByOriginal[image.src] ?? image.src,
+      })),
+    [images, resolvedSrcByOriginal],
+  )
 
   const transform = useImageTransform({
     minZoom: numeric.minZoom,
@@ -80,6 +91,15 @@ export function ImageInspector(props: ImageInspectorProps) {
   useEffect(() => {
     resetAll()
   }, [resetAll, safeActiveIndex])
+
+  useEffect(() => {
+    const objectUrls = objectUrlByOriginalRef.current
+    return () => {
+      Object.values(objectUrls).forEach((url) => {
+        URL.revokeObjectURL(url)
+      })
+    }
+  }, [])
 
   useEffect(() => {
     const onWindowWheel = (event: WheelEvent) => {
@@ -144,7 +164,7 @@ export function ImageInspector(props: ImageInspectorProps) {
         <EmptyState message="Unable to load this image." isError />
       ) : (
         <ImageStage
-          images={images}
+          images={displayImages}
           activeIndex={safeActiveIndex}
           imageClassName={props.imageClassName}
           lensClassName={props.lensClassName}
@@ -212,12 +232,57 @@ export function ImageInspector(props: ImageInspectorProps) {
             dragStartRef.current = null
           }}
           onError={() => {
-            setBrokenImageIndex(safeActiveIndex)
-            props.onError?.({
-              type: 'image-load-error',
-              message: 'The active image failed to load.',
-              image: activeImage,
-            })
+            const originalSrc = images[safeActiveIndex]?.src
+            if (!originalSrc) {
+              setBrokenImageIndex(safeActiveIndex)
+              props.onError?.({
+                type: 'image-load-error',
+                message: 'The active image failed to load.',
+                image: activeImage,
+              })
+              return
+            }
+
+            if (originalSrc.startsWith('blob:') || resolvingOriginalsRef.current[originalSrc]) {
+              setBrokenImageIndex(safeActiveIndex)
+              props.onError?.({
+                type: 'image-load-error',
+                message: 'The active image failed to load.',
+                image: activeImage,
+              })
+              return
+            }
+
+            resolvingOriginalsRef.current[originalSrc] = true
+            fetch(originalSrc)
+              .then(async (response) => {
+                if (!response.ok) {
+                  throw new Error(`Fallback image fetch failed with status ${response.status}`)
+                }
+                const blob = await response.blob()
+                const objectUrl = URL.createObjectURL(blob)
+                const previous = objectUrlByOriginalRef.current[originalSrc]
+                if (previous) {
+                  URL.revokeObjectURL(previous)
+                }
+                objectUrlByOriginalRef.current[originalSrc] = objectUrl
+                setResolvedSrcByOriginal((current) => ({
+                  ...current,
+                  [originalSrc]: objectUrl,
+                }))
+                setBrokenImageIndex((current) => (current === safeActiveIndex ? null : current))
+              })
+              .catch(() => {
+                setBrokenImageIndex(safeActiveIndex)
+                props.onError?.({
+                  type: 'image-load-error',
+                  message: 'The active image failed to load.',
+                  image: activeImage,
+                })
+              })
+              .finally(() => {
+                delete resolvingOriginalsRef.current[originalSrc]
+              })
           }}
         />
       )}
@@ -288,7 +353,7 @@ export function ImageInspector(props: ImageInspectorProps) {
 
       {features.thumbnails ? (
         <ThumbnailStrip
-          images={images}
+          images={displayImages}
           activeIndex={safeActiveIndex}
           className={props.thumbnailClassName}
           thumbnailClassName={props.thumbnailClassName}
