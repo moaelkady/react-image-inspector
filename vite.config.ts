@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import dts from "vite-plugin-dts";
 
 export default defineConfig({
   server: {
@@ -8,12 +7,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    dts({
-      include: ["src/components", "src/index.ts"],
-      outDir: "dist",
-      insertTypesEntry: true,
-      copyDtsFiles: true,
-    }),
   ],
   build: {
     cssCodeSplit: false,

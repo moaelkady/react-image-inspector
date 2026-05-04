@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Fix declaration output so `dist/index.d.ts` exports `ImageInspector` and public types.
+- Move type generation to `tsc --emitDeclarationOnly` and run it after Vite build.
+- Add declaration module shims for CSS/SVG and a dedicated `tsconfig.build.json`.
+
 ## 0.1.0
 
 - Initial package release.

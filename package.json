@@ -1,6 +1,6 @@
 {
   "name": "react-image-inspector",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A lightweight React image viewer with zoom, rotation, flipping, thumbnails, theming, and a magnifying lens.",
   "type": "module",
   "main": "dist/index.cjs",
@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run build:types",
+    "build:types": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint .",
