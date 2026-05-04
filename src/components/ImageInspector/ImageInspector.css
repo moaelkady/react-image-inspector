@@ -22,7 +22,7 @@
   width: 100%;
 }
 
-.rii[data-theme='dark'] {
+.rii[data-theme="dark"] {
   --rii-bg: #000000;
   --rii-surface: #0f0f0f;
   --rii-border: #2a2a2a;
@@ -31,7 +31,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .rii[data-theme='system'] {
+  .rii[data-theme="system"] {
     --rii-bg: #000000;
     --rii-surface: #0f0f0f;
     --rii-border: #2a2a2a;
@@ -66,6 +66,9 @@
   height: 100%;
   min-width: 100%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .rii__image {
@@ -74,7 +77,6 @@
   transform-origin: center center;
   transition: transform 160ms ease-out;
   user-select: none;
-  width: 100%;
 }
 
 .rii__toolbar {
@@ -144,14 +146,13 @@
 .rii__zoom-slider {
   --rii-zoom-percent: 50%;
   appearance: none;
-  background:
-    linear-gradient(
-      to right,
-      rgb(206 232 255 / 80%) 0,
-      rgb(206 232 255 / 80%) var(--rii-zoom-percent),
-      rgb(146 186 222 / 34%) var(--rii-zoom-percent),
-      rgb(146 186 222 / 34%) 100%
-    );
+  background: linear-gradient(
+    to right,
+    rgb(206 232 255 / 80%) 0,
+    rgb(206 232 255 / 80%) var(--rii-zoom-percent),
+    rgb(146 186 222 / 34%) var(--rii-zoom-percent),
+    rgb(146 186 222 / 34%) 100%
+  );
   border: 1px dashed rgb(169 206 236 / 70%);
   border-radius: 999px;
   height: 0.28rem;
@@ -247,7 +248,7 @@
   width: calc(var(--rii-thumbnail-size) * 1.25);
 }
 
-.rii__thumbnail[data-active='true'] {
+.rii__thumbnail[data-active="true"] {
   border-color: var(--rii-primary);
 }
 
