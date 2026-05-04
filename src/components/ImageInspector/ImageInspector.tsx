@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import dashIcon from '../../assets/icons/dash.svg'
 import plusIcon from '../../assets/icons/plus.svg'
 import zoomInIcon from '../../assets/icons/zoom-in.svg'
@@ -124,6 +124,51 @@ export function ImageInspector(props: ImageInspectorProps) {
   const rootStyle = { '--rii-primary': props.primaryColor || '#38bdf8' } as CSSProperties
   const zoomSliderStyle = { '--rii-zoom-percent': `${zoomPercent}%` } as CSSProperties
 
+  const emitActiveImageLoadError = useCallback(() => {
+    props.onError?.({
+      type: 'image-load-error',
+      message: 'The active image failed to load.',
+      image: activeImage,
+    })
+  }, [activeImage, props])
+
+  const resolveToObjectUrl = useCallback((originalSrc: string) => {
+    if (!originalSrc) return
+    if (originalSrc.startsWith('blob:') || originalSrc.startsWith('data:')) return
+    if (resolvedSrcByOriginal[originalSrc]) return
+    if (resolvingOriginalsRef.current[originalSrc]) return
+
+    resolvingOriginalsRef.current[originalSrc] = true
+    fetch(originalSrc)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Image fetch failed with status ${response.status}`)
+        }
+        const blob = await response.blob()
+        if (!blob.type.startsWith('image/')) {
+          throw new Error('Fetched resource is not an image blob.')
+        }
+        const objectUrl = URL.createObjectURL(blob)
+        const previous = objectUrlByOriginalRef.current[originalSrc]
+        if (previous) {
+          URL.revokeObjectURL(previous)
+        }
+        objectUrlByOriginalRef.current[originalSrc] = objectUrl
+        setResolvedSrcByOriginal((current) => ({
+          ...current,
+          [originalSrc]: objectUrl,
+        }))
+        setBrokenImageIndex((current) => (current === safeActiveIndex ? null : current))
+      })
+      .catch(() => {
+        setBrokenImageIndex(safeActiveIndex)
+        emitActiveImageLoadError()
+      })
+      .finally(() => {
+        delete resolvingOriginalsRef.current[originalSrc]
+      })
+  }, [emitActiveImageLoadError, resolvedSrcByOriginal, safeActiveIndex])
+
   useKeyboardShortcuts(rootRef, {
     enabled: features.keyboardShortcuts,
     onNext: () => setActiveIndex((index) => (index + 1) % images.length),
@@ -142,6 +187,14 @@ export function ImageInspector(props: ImageInspectorProps) {
     canFlipHorizontal: features.flipHorizontal,
     canFlipVertical: features.flipVertical,
   })
+
+  useEffect(() => {
+    const originalSrc = images[safeActiveIndex]?.src
+    if (!originalSrc) return
+    if (!/^https?:\/\//i.test(originalSrc)) return
+
+    resolveToObjectUrl(originalSrc)
+  }, [images, safeActiveIndex, resolveToObjectUrl])
 
   if (!activeImage) {
     return (
@@ -235,54 +288,17 @@ export function ImageInspector(props: ImageInspectorProps) {
             const originalSrc = images[safeActiveIndex]?.src
             if (!originalSrc) {
               setBrokenImageIndex(safeActiveIndex)
-              props.onError?.({
-                type: 'image-load-error',
-                message: 'The active image failed to load.',
-                image: activeImage,
-              })
+              emitActiveImageLoadError()
               return
             }
 
             if (originalSrc.startsWith('blob:') || resolvingOriginalsRef.current[originalSrc]) {
               setBrokenImageIndex(safeActiveIndex)
-              props.onError?.({
-                type: 'image-load-error',
-                message: 'The active image failed to load.',
-                image: activeImage,
-              })
+              emitActiveImageLoadError()
               return
             }
 
-            resolvingOriginalsRef.current[originalSrc] = true
-            fetch(originalSrc)
-              .then(async (response) => {
-                if (!response.ok) {
-                  throw new Error(`Fallback image fetch failed with status ${response.status}`)
-                }
-                const blob = await response.blob()
-                const objectUrl = URL.createObjectURL(blob)
-                const previous = objectUrlByOriginalRef.current[originalSrc]
-                if (previous) {
-                  URL.revokeObjectURL(previous)
-                }
-                objectUrlByOriginalRef.current[originalSrc] = objectUrl
-                setResolvedSrcByOriginal((current) => ({
-                  ...current,
-                  [originalSrc]: objectUrl,
-                }))
-                setBrokenImageIndex((current) => (current === safeActiveIndex ? null : current))
-              })
-              .catch(() => {
-                setBrokenImageIndex(safeActiveIndex)
-                props.onError?.({
-                  type: 'image-load-error',
-                  message: 'The active image failed to load.',
-                  image: activeImage,
-                })
-              })
-              .finally(() => {
-                delete resolvingOriginalsRef.current[originalSrc]
-              })
+            resolveToObjectUrl(originalSrc)
           }}
         />
       )}
