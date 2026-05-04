@@ -48,6 +48,7 @@ export function ImageInspector(props: ImageInspectorProps) {
   const [activeIndex, setActiveIndex] = useState(() => resolveInitialIndex(props.initialIndex, images.length))
   const [isTouchDevice] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia !== 'function') return false
     return window.matchMedia('(pointer: coarse)').matches
   })
 
@@ -132,7 +133,7 @@ export function ImageInspector(props: ImageInspectorProps) {
     })
   }, [activeImage, props])
 
-  const resolveToObjectUrl = useCallback((originalSrc: string) => {
+  const resolveToObjectUrl = useCallback((originalSrc: string, markBrokenOnFailure = true) => {
     if (!originalSrc) return
     if (originalSrc.startsWith('blob:') || originalSrc.startsWith('data:')) return
     if (resolvedSrcByOriginal[originalSrc]) return
@@ -161,8 +162,10 @@ export function ImageInspector(props: ImageInspectorProps) {
         setBrokenImageIndex((current) => (current === safeActiveIndex ? null : current))
       })
       .catch(() => {
-        setBrokenImageIndex(safeActiveIndex)
-        emitActiveImageLoadError()
+        if (markBrokenOnFailure) {
+          setBrokenImageIndex(safeActiveIndex)
+          emitActiveImageLoadError()
+        }
       })
       .finally(() => {
         delete resolvingOriginalsRef.current[originalSrc]
@@ -193,7 +196,7 @@ export function ImageInspector(props: ImageInspectorProps) {
     if (!originalSrc) return
     if (!/^https?:\/\//i.test(originalSrc)) return
 
-    resolveToObjectUrl(originalSrc)
+    resolveToObjectUrl(originalSrc, false)
   }, [images, safeActiveIndex, resolveToObjectUrl])
 
   if (!activeImage) {
@@ -298,7 +301,7 @@ export function ImageInspector(props: ImageInspectorProps) {
               return
             }
 
-            resolveToObjectUrl(originalSrc)
+            resolveToObjectUrl(originalSrc, true)
           }}
         />
       )}

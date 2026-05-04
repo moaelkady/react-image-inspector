@@ -1,6 +1,6 @@
 {
   "name": "react-image-inspector",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A lightweight React image viewer with zoom, rotation, flipping, thumbnails, theming, and a magnifying lens.",
   "type": "module",
   "main": "dist/index.cjs",
@@ -44,6 +44,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",

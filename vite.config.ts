@@ -21,8 +21,4 @@ export default defineConfig({
       external: ["react", "react-dom", "react/jsx-runtime"],
     },
   },
-  test: {
-    environment: "node",
-    include: ["src/**/*.test.ts"],
-  },
 });

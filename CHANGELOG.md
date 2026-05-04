@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Improve handling of signed/object-storage URLs by proactively resolving remote images to blob URLs and retrying on load error.
+- Add component test coverage for signed URL rendering behavior in a jsdom Vitest environment.
+
 ## 0.1.3
 
 - Add a fallback loader that retries failed image URLs via fetched blob object URLs.
