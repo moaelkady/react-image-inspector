@@ -1,5 +1,5 @@
 import { MagnifierLens } from './MagnifierLens'
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import type { PointerEvent, RefObject } from 'react'
 import type { ViewerImage, ViewerTransformState } from './types'
 
@@ -49,9 +49,20 @@ export function ImageStage({
 }: ImageStageProps) {
   const [imageRect, setImageRect] = useState<DOMRect | null>(null)
   const [containerRect, setContainerRect] = useState<DOMRect | null>(null)
+  const [isActiveImageLoading, setIsActiveImageLoading] = useState(true)
   const scaleX = transform.flipX ? -1 : 1
   const scaleY = transform.flipY ? -1 : 1
   const transformValue = `translate(${pan.x}px, ${pan.y}px) scale(${transform.zoom}) rotate(${transform.rotation}deg) scale(${scaleX}, ${scaleY})`
+  const activeSrc = images[activeIndex]?.src ?? ''
+
+  useEffect(() => {
+    const activeImage = imageRef.current
+    if (activeImage?.complete && activeImage.naturalWidth > 0 && activeImage.currentSrc === activeSrc) {
+      setIsActiveImageLoading(false)
+      return
+    }
+    setIsActiveImageLoading(true)
+  }, [activeIndex, activeSrc, imageRef])
 
   useLayoutEffect(() => {
     if (!lens.enabled || !lens.visible) return
@@ -80,6 +91,7 @@ export function ImageStage({
               className={`rii__image ${imageClassName ?? ''}`.trim()}
               style={index === activeIndex ? { transform: transformValue } : undefined}
               draggable={false}
+              onLoad={index === activeIndex ? () => setIsActiveImageLoading(false) : undefined}
               onError={index === activeIndex ? onError : undefined}
             />
           </div>
@@ -96,6 +108,7 @@ export function ImageStage({
           imageRect={imageRect}
           containerRect={containerRect}
           lensClassName={lensClassName}
+          isLensLoading={isActiveImageLoading}
         />
       ) : null}
     </div>

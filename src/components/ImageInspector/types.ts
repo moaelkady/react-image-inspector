@@ -80,6 +80,10 @@ export type ImageInspectorProps = {
   toolbarClassName?: string
   thumbnailClassName?: string
   lensClassName?: string
+  lensShimmerColors?: {
+    start: string
+    end: string
+  }
   onImageChange?: (index: number, image: ViewerImage) => void
   onTransformChange?: (state: ViewerTransformState) => void
   onError?: (error: ImageInspectorError) => void

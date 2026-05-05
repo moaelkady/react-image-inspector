@@ -122,7 +122,11 @@ export function ImageInspector(props: ImageInspectorProps) {
   const zoomRange = numeric.maxZoom - numeric.minZoom || 1
   const zoomPercent = ((transform.state.zoom - numeric.minZoom) / zoomRange) * 100
   const toolbarFeatures = showZoomControl ? { ...features, zoomIn: false, zoomOut: false } : features
-  const rootStyle = { '--rii-primary': props.primaryColor || '#38bdf8' } as CSSProperties
+  const rootStyle = {
+    '--rii-primary': props.primaryColor || '#38bdf8',
+    '--rii-lens-shimmer-start': props.lensShimmerColors?.start || '#0ce89d',
+    '--rii-lens-shimmer-end': props.lensShimmerColors?.end || '#00a3ff',
+  } as CSSProperties
   const zoomSliderStyle = { '--rii-zoom-percent': `${zoomPercent}%` } as CSSProperties
 
   const emitActiveImageLoadError = useCallback(() => {

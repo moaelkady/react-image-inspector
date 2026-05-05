@@ -8,6 +8,7 @@ type MagnifierLensProps = {
   imageRect: DOMRect | null
   containerRect: DOMRect | null
   lensClassName?: string
+  isLensLoading?: boolean
 }
 
 export function MagnifierLens({
@@ -20,6 +21,7 @@ export function MagnifierLens({
   imageRect,
   containerRect,
   lensClassName,
+  isLensLoading = false,
 }: MagnifierLensProps) {
   if (!imageRect || !containerRect) return null
 
@@ -34,11 +36,12 @@ export function MagnifierLens({
     <div
       aria-hidden="true"
       className={`rii__lens ${lensClassName ?? ''}`.trim()}
+      data-loading={isLensLoading ? 'true' : 'false'}
       style={{
         width: lensSize,
         height: lensSize,
         transform: `translate(${x}px, ${y}px)`,
-        backgroundImage: `url("${src}")`,
+        backgroundImage: isLensLoading ? 'none' : `url("${src}")`,
         backgroundSize: `${imageRect.width * lensZoom}px ${imageRect.height * lensZoom}px`,
         backgroundPosition: `${backgroundX}px ${backgroundY}px`,
       }}
