@@ -9,6 +9,7 @@ No external image-viewer dependency is used.
 - Zoom in/out/reset + wheel zoom + double-click zoom
 - Rotate left/right, flip horizontal/vertical, reset all
 - Optional magnifier lens
+- Magnifier lens loading shimmer (with customizable colors)
 - Optional drag-to-pan while zoomed
 - Optional toolbar and thumbnail strip
 - Feature flags to hide/disable specific tools
@@ -85,6 +86,7 @@ export function Example() {
 - `labels?: ImageInspectorLabels`
 - `zoomStep?: number`, `minZoom?: number`, `maxZoom?: number`, `initialZoom?: number`
 - `lensSize?: number`, `lensZoom?: number`
+- `lensShimmerColors?: { start: string; end: string }` (default: `{ start: '#0ce89d', end: '#00a3ff' }`)
 - `showThumbnails?: boolean`, `showToolbar?: boolean`
 - `className?: string`, `imageClassName?: string`, `toolbarClassName?: string`, `thumbnailClassName?: string`, `lensClassName?: string`
 - `onImageChange?: (index, image) => void`
@@ -123,6 +125,13 @@ Key CSS variables:
 - `--rii-button-size`
 - `--rii-thumbnail-size`
 - `--rii-lens-size`
+- `--rii-lens-shimmer-start`
+- `--rii-lens-shimmer-end`
+
+Magnifier loading behavior:
+
+- While the active image is loading, the lens shows a shimmer overlay.
+- The loading shimmer stays visible for a short minimum time (~900ms) so the effect is perceivable even on fast loads.
 
 ## Accessibility notes
 
