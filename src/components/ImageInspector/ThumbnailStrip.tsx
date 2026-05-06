@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import type { ViewerImage } from './types'
+import type { ViewerMedia } from './types'
 
 type ThumbnailStripProps = {
-  images: ViewerImage[]
+  images: ViewerMedia[]
   activeIndex: number
   onSelect: (index: number) => void
   labelPrefix: string
@@ -43,7 +43,12 @@ export function ThumbnailStrip({
             aria-current={active ? 'true' : undefined}
             data-active={active}
           >
-            <img src={image.thumbnailSrc || image.src} alt={image.alt ?? `Thumbnail ${index + 1}`} loading="lazy" />
+            <img
+              src={image.thumbnailSrc || image.poster || image.src}
+              alt={image.alt ?? `Thumbnail ${index + 1}`}
+              loading="lazy"
+            />
+            {image.type === 'video' ? <span className="rii__thumbnail-badge">Video</span> : null}
           </button>
         )
       })}

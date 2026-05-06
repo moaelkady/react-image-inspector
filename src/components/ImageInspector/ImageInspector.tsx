@@ -10,6 +10,7 @@ import { Toolbar } from './Toolbar'
 import { useImageTransform } from './useImageTransform'
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 import { useMagnifierLens } from './useMagnifierLens'
+import { useResolvedMediaSrc } from './useResolvedMediaSrc'
 import {
   normalizeImages,
   resolveFeatures,
@@ -49,7 +50,7 @@ export function ImageInspector(props: ImageInspectorProps) {
   const [isTouchDevice] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     if (typeof window.matchMedia !== 'function') return false
-    return window.matchMedia('(pointer: coarse)').matches
+    return Boolean(window.matchMedia('(pointer: coarse)')?.matches)
   })
 
   useEffect(() => {
@@ -59,7 +60,8 @@ export function ImageInspector(props: ImageInspectorProps) {
   }, [images.length, props])
 
   const safeActiveIndex = resolveInitialIndex(activeIndex, images.length)
-  const activeImage = images[safeActiveIndex]
+  const activeMedia = images[safeActiveIndex]
+  const isVideo = activeMedia?.type === 'video'
   const rootRef = useRef<HTMLDivElement | null>(null)
   const stageRef = useRef<HTMLDivElement | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
@@ -67,18 +69,8 @@ export function ImageInspector(props: ImageInspectorProps) {
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null)
   const [brokenImageIndex, setBrokenImageIndex] = useState<number | null>(null)
-  const [resolvedSrcByOriginal, setResolvedSrcByOriginal] = useState<Record<string, string>>({})
-  const objectUrlByOriginalRef = useRef<Record<string, string>>({})
-  const resolvingOriginalsRef = useRef<Record<string, boolean>>({})
-  const hasBrokenImage = brokenImageIndex === safeActiveIndex
-  const displayImages = useMemo(
-    () =>
-      images.map((image) => ({
-        ...image,
-        src: resolvedSrcByOriginal[image.src] ?? image.src,
-      })),
-    [images, resolvedSrcByOriginal],
-  )
+  const hasBrokenMedia = brokenImageIndex === safeActiveIndex
+  const displayImages = images
 
   const transform = useImageTransform({
     minZoom: numeric.minZoom,
@@ -93,35 +85,63 @@ export function ImageInspector(props: ImageInspectorProps) {
     resetAll()
   }, [resetAll, safeActiveIndex])
 
-  useEffect(() => {
-    const objectUrls = objectUrlByOriginalRef.current
-    return () => {
-      Object.values(objectUrls).forEach((url) => {
-        URL.revokeObjectURL(url)
+  const mediaFeatures = isVideo
+    ? {
+        ...features,
+        zoom: false,
+        zoomIn: false,
+        zoomOut: false,
+        resetZoom: false,
+        wheelZoom: false,
+        doubleClickZoom: false,
+        rotate: false,
+        rotateLeft: false,
+        rotateRight: false,
+        flip: false,
+        flipHorizontal: false,
+        flipVertical: false,
+        resetAll: false,
+        magnifier: false,
+        dragPan: false,
+      }
+    : features
+
+  const lens = useMagnifierLens(mediaFeatures.magnifier, transform.state, numeric.lensSize, isTouchDevice, isDragging)
+
+  const handleResolveError = useCallback(
+    (message: string, media: (typeof images)[number]) => {
+      props.onError?.({
+        type: 'media-resolve-error',
+        message,
+        image: media,
       })
-    }
-  }, [])
+    },
+    [props],
+  )
 
   useEffect(() => {
     const onWindowWheel = (event: WheelEvent) => {
       if (!stageHoveredRef.current) return
       event.preventDefault()
-      if (!features.wheelZoom) return
+      if (!mediaFeatures.wheelZoom) return
       if (event.deltaY < 0) zoomIn()
       else zoomOut()
     }
 
     window.addEventListener('wheel', onWindowWheel, { passive: false, capture: true })
     return () => window.removeEventListener('wheel', onWindowWheel, { capture: true })
-  }, [features.wheelZoom, zoomIn, zoomOut])
+  }, [mediaFeatures.wheelZoom, zoomIn, zoomOut])
 
-  const lens = useMagnifierLens(features.magnifier, transform.state, numeric.lensSize, isTouchDevice, isDragging)
+  const { resolvedSrc: resolvedActiveSrc, isObjectUrl } = useResolvedMediaSrc({
+    media: activeMedia,
+    onResolveError: handleResolveError,
+  })
 
   const canNavigate = images.length > 1
-  const showZoomControl = features.toolbar && features.zoom
+  const showZoomControl = mediaFeatures.toolbar && mediaFeatures.zoom
   const zoomRange = numeric.maxZoom - numeric.minZoom || 1
   const zoomPercent = ((transform.state.zoom - numeric.minZoom) / zoomRange) * 100
-  const toolbarFeatures = showZoomControl ? { ...features, zoomIn: false, zoomOut: false } : features
+  const toolbarFeatures = showZoomControl ? { ...mediaFeatures, zoomIn: false, zoomOut: false } : mediaFeatures
   const rootStyle = {
     '--rii-primary': props.primaryColor || '#38bdf8',
     '--rii-lens-shimmer-start': props.lensShimmerColors?.start || '#0ce89d',
@@ -129,52 +149,19 @@ export function ImageInspector(props: ImageInspectorProps) {
   } as CSSProperties
   const zoomSliderStyle = { '--rii-zoom-percent': `${zoomPercent}%` } as CSSProperties
 
-  const emitActiveImageLoadError = useCallback(() => {
-    props.onError?.({
-      type: 'image-load-error',
-      message: 'The active image failed to load.',
-      image: activeImage,
-    })
-  }, [activeImage, props])
+  const emitActiveMediaLoadError = useCallback(
+    (type: 'image' | 'video') => {
+      const isVideoType = type === 'video'
+      props.onError?.({
+        type: isVideoType ? 'video-load-error' : 'image-load-error',
+        message: isVideoType ? 'The active video failed to load.' : 'The active image failed to load.',
+        image: activeMedia,
+      })
+    },
+    [activeMedia, props],
+  )
 
-  const resolveToObjectUrl = useCallback((originalSrc: string, markBrokenOnFailure = true) => {
-    if (!originalSrc) return
-    if (originalSrc.startsWith('blob:') || originalSrc.startsWith('data:')) return
-    if (resolvedSrcByOriginal[originalSrc]) return
-    if (resolvingOriginalsRef.current[originalSrc]) return
-
-    resolvingOriginalsRef.current[originalSrc] = true
-    fetch(originalSrc)
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Image fetch failed with status ${response.status}`)
-        }
-        const blob = await response.blob()
-        if (!blob.type.startsWith('image/')) {
-          throw new Error('Fetched resource is not an image blob.')
-        }
-        const objectUrl = URL.createObjectURL(blob)
-        const previous = objectUrlByOriginalRef.current[originalSrc]
-        if (previous) {
-          URL.revokeObjectURL(previous)
-        }
-        objectUrlByOriginalRef.current[originalSrc] = objectUrl
-        setResolvedSrcByOriginal((current) => ({
-          ...current,
-          [originalSrc]: objectUrl,
-        }))
-        setBrokenImageIndex((current) => (current === safeActiveIndex ? null : current))
-      })
-      .catch(() => {
-        if (markBrokenOnFailure) {
-          setBrokenImageIndex(safeActiveIndex)
-          emitActiveImageLoadError()
-        }
-      })
-      .finally(() => {
-        delete resolvingOriginalsRef.current[originalSrc]
-      })
-  }, [emitActiveImageLoadError, resolvedSrcByOriginal, safeActiveIndex])
+  const downloadHref = isObjectUrl ? resolvedActiveSrc : activeMedia?.src
 
   useKeyboardShortcuts(rootRef, {
     enabled: features.keyboardShortcuts,
@@ -187,23 +174,17 @@ export function ImageInspector(props: ImageInspectorProps) {
     onRotateLeft: transform.rotateLeft,
     onFlipHorizontal: transform.flipHorizontal,
     onFlipVertical: transform.flipVertical,
-    onEscape: lens.hideLens,
+    onEscape: () => {
+      if (!isVideo) lens.hideLens()
+    },
     canNavigate,
-    canZoom: features.zoom,
-    canRotate: features.rotate,
-    canFlipHorizontal: features.flipHorizontal,
-    canFlipVertical: features.flipVertical,
+    canZoom: mediaFeatures.zoom,
+    canRotate: mediaFeatures.rotate,
+    canFlipHorizontal: mediaFeatures.flipHorizontal,
+    canFlipVertical: mediaFeatures.flipVertical,
   })
 
-  useEffect(() => {
-    const originalSrc = images[safeActiveIndex]?.src
-    if (!originalSrc) return
-    if (!/^https?:\/\//i.test(originalSrc)) return
-
-    resolveToObjectUrl(originalSrc, false)
-  }, [images, safeActiveIndex, resolveToObjectUrl])
-
-  if (!activeImage) {
+  if (!activeMedia) {
     return (
       <div className={`rii ${props.className ?? ''}`.trim()} data-theme={props.theme ?? 'system'}>
         <EmptyState message="No image available. Provide `src` or `images` with valid entries." />
@@ -218,14 +199,15 @@ export function ImageInspector(props: ImageInspectorProps) {
       data-theme={props.theme ?? 'system'}
       tabIndex={0}
       style={rootStyle}
-      aria-label={labels.image}
+      aria-label={isVideo ? labels.video : labels.image}
     >
-      {hasBrokenImage ? (
-        <EmptyState message="Unable to load this image." isError />
+      {hasBrokenMedia ? (
+        <EmptyState message={isVideo ? 'Unable to load this video.' : 'Unable to load this image.'} isError />
       ) : (
         <ImageStage
           images={displayImages}
           activeIndex={safeActiveIndex}
+          resolvedActiveSrc={resolvedActiveSrc}
           imageClassName={props.imageClassName}
           lensClassName={props.lensClassName}
           transform={transform.state}
@@ -233,7 +215,7 @@ export function ImageInspector(props: ImageInspectorProps) {
           stageRef={stageRef}
           imageRef={imageRef}
           lens={{
-            enabled: features.magnifier && lens.canRenderLens,
+            enabled: mediaFeatures.magnifier && lens.canRenderLens,
             visible: lens.isVisible,
             x: lens.point.x,
             y: lens.point.y,
@@ -267,7 +249,7 @@ export function ImageInspector(props: ImageInspectorProps) {
             lens.hideLens()
           }}
           onDoubleClick={() => {
-            if (!features.doubleClickZoom) return
+            if (!mediaFeatures.doubleClickZoom) return
             if (transform.state.zoom === numeric.initialZoom) {
               transform.setZoom(transform.state.zoom + numeric.zoomStep * 2)
             } else {
@@ -275,7 +257,7 @@ export function ImageInspector(props: ImageInspectorProps) {
             }
           }}
           onPointerDown={(event) => {
-            if (!features.dragPan || transform.state.zoom <= numeric.initialZoom) return
+            if (!mediaFeatures.dragPan || transform.state.zoom <= numeric.initialZoom) return
             if (!stageRef.current) return
             setIsDragging(true)
             lens.hideLens()
@@ -291,21 +273,9 @@ export function ImageInspector(props: ImageInspectorProps) {
             setIsDragging(false)
             dragStartRef.current = null
           }}
-          onError={() => {
-            const originalSrc = images[safeActiveIndex]?.src
-            if (!originalSrc) {
-              setBrokenImageIndex(safeActiveIndex)
-              emitActiveImageLoadError()
-              return
-            }
-
-            if (originalSrc.startsWith('blob:') || resolvingOriginalsRef.current[originalSrc]) {
-              setBrokenImageIndex(safeActiveIndex)
-              emitActiveImageLoadError()
-              return
-            }
-
-            resolveToObjectUrl(originalSrc, true)
+          onError={(type) => {
+            setBrokenImageIndex(safeActiveIndex)
+            emitActiveMediaLoadError(type)
           }}
         />
       )}
@@ -341,7 +311,7 @@ export function ImageInspector(props: ImageInspectorProps) {
             className="rii__zoom-icon-button"
             onClick={transform.zoomOut}
             aria-label={labels.zoomOut}
-            disabled={!transform.canZoomOut || !features.zoomOut}
+            disabled={!transform.canZoomOut || !mediaFeatures.zoomOut}
           >
             <img src={dashIcon} alt="" aria-hidden="true" />
           </button>
@@ -355,7 +325,7 @@ export function ImageInspector(props: ImageInspectorProps) {
               value={transform.state.zoom}
               onChange={(event) => transform.setZoom(Number(event.target.value))}
               aria-label="Zoom level"
-              disabled={!features.zoom}
+              disabled={!mediaFeatures.zoom}
               style={zoomSliderStyle}
             />
           </div>
@@ -364,13 +334,27 @@ export function ImageInspector(props: ImageInspectorProps) {
             className="rii__zoom-icon-button"
             onClick={transform.zoomIn}
             aria-label={labels.zoomIn}
-            disabled={!transform.canZoomIn || !features.zoomIn}
+            disabled={!transform.canZoomIn || !mediaFeatures.zoomIn}
           >
             <img src={plusIcon} alt="" aria-hidden="true" />
           </button>
           <span className="rii__zoom-search-icon" aria-hidden="true">
             <img src={zoomInIcon} alt="" />
           </span>
+        </div>
+      ) : null}
+
+      {isVideo && downloadHref ? (
+        <div className="rii__video-actions">
+          <a
+            className="rii__button rii__video-download"
+            href={downloadHref}
+            download={activeMedia.downloadName}
+            aria-label={labels.downloadVideo}
+          >
+            <span aria-hidden="true">↓</span>
+            <span className="rii__button-text">{labels.downloadVideo}</span>
+          </a>
         </div>
       ) : null}
 

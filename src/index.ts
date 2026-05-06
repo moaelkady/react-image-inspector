@@ -9,6 +9,7 @@ export type {
   ImageInspectorLabels,
   ImageInspectorProps,
   ImageInspectorTheme,
+  ViewerMedia,
   ViewerImage,
   ViewerTransformState,
 } from './components/ImageInspector/types'

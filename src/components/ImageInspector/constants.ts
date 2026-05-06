@@ -40,6 +40,8 @@ export const DEFAULT_LABELS: Required<ImageInspectorLabels> = {
   nextImage: 'Next image',
   thumbnail: 'Thumbnail',
   image: 'Image preview',
+  video: 'Video preview',
+  downloadVideo: 'Download video',
 }
 
 export const DEFAULT_TRANSFORM: ViewerTransformState = {

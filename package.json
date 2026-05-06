@@ -1,7 +1,7 @@
 {
   "name": "react-image-inspector",
-  "version": "0.1.6",
-  "description": "A lightweight React image viewer with zoom, rotation, flipping, thumbnails, theming, and a magnifying lens.",
+  "version": "0.1.7",
+  "description": "A lightweight React media viewer for images and videos with zoom, rotation, flipping, thumbnails, theming, and a magnifying lens for images.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -54,6 +54,8 @@
   "keywords": [
     "react",
     "image",
+    "video",
+    "media",
     "viewer",
     "inspector",
     "magnifier",

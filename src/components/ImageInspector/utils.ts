@@ -3,7 +3,7 @@ import type {
   ImageInspectorError,
   ImageInspectorFeatures,
   ResolvedImageInspectorFeatures,
-  ViewerImage,
+  ViewerMedia,
 } from './types'
 
 const warnedMessages = new Set<string>()
@@ -24,9 +24,9 @@ export function normalizeRotation(value: number): number {
   return normalized < 0 ? normalized + 360 : normalized
 }
 
-export function normalizeImages(input: { src?: string; alt?: string; images?: ViewerImage[] }): ViewerImage[] {
+export function normalizeImages(input: { src?: string; alt?: string; images?: ViewerMedia[] }): ViewerMedia[] {
   const normalizedFromImages = Array.isArray(input.images)
-    ? input.images.filter((item): item is ViewerImage => Boolean(item?.src?.trim()))
+    ? input.images.filter((item): item is ViewerMedia => Boolean(item?.src?.trim()))
     : []
 
   if (normalizedFromImages.length > 0) {

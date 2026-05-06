@@ -81,6 +81,13 @@
   user-select: none;
 }
 
+.rii__video {
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
 .rii__toolbar {
   display: flex;
   gap: 0.5rem;
@@ -264,6 +271,30 @@
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.rii__thumbnail {
+  position: relative;
+}
+
+.rii__thumbnail-badge {
+  background: rgb(15 23 42 / 78%);
+  border-radius: 999px;
+  bottom: 0.35rem;
+  color: #fff;
+  font-size: 0.625rem;
+  left: 0.35rem;
+  padding: 0.08rem 0.35rem;
+  position: absolute;
+}
+
+.rii__video-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rii__video-download {
+  text-decoration: none;
 }
 
 .rii__lens {

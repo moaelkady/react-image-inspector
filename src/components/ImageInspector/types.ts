@@ -1,10 +1,18 @@
-export type ViewerImage = {
+export type ViewerMediaType = 'image' | 'video'
+
+export type ViewerMedia = {
   src: string
   alt?: string
   title?: string
   thumbnailSrc?: string
+  type?: ViewerMediaType
+  poster?: string
+  downloadName?: string
   id?: string | number
 }
+
+// Backward-compatible alias for existing consumers.
+export type ViewerImage = ViewerMedia
 
 export type ImageInspectorTheme = 'light' | 'dark' | 'system'
 
@@ -50,18 +58,20 @@ export type ImageInspectorLabels = {
   nextImage?: string
   thumbnail?: string
   image?: string
+  video?: string
+  downloadVideo?: string
 }
 
 export type ImageInspectorError = {
-  type: 'empty-source' | 'image-load-error' | 'invalid-prop'
+  type: 'empty-source' | 'image-load-error' | 'video-load-error' | 'invalid-prop' | 'media-resolve-error'
   message: string
-  image?: ViewerImage
+  image?: ViewerMedia
 }
 
 export type ImageInspectorProps = {
   src?: string
   alt?: string
-  images?: ViewerImage[]
+  images?: ViewerMedia[]
   initialIndex?: number
   theme?: ImageInspectorTheme
   primaryColor?: string
@@ -84,7 +94,7 @@ export type ImageInspectorProps = {
     start: string
     end: string
   }
-  onImageChange?: (index: number, image: ViewerImage) => void
+  onImageChange?: (index: number, image: ViewerMedia) => void
   onTransformChange?: (state: ViewerTransformState) => void
   onError?: (error: ImageInspectorError) => void
 }

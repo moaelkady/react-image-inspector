@@ -47,6 +47,11 @@ function App() {
         <h2>Signed object-storage URL (download-like link)</h2>
         <ImageInspector src={signedObjectStorageImage} alt="Signed object-storage image preview" />
       </section>
+
+      <section>
+        <h2>Mixed gallery (images + video)</h2>
+        <ImageInspector images={sampleGallery} />
+      </section>
     </main>
   )
 }
