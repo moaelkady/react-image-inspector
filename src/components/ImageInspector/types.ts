@@ -43,6 +43,7 @@ export type ImageInspectorFeatures = {
   dragPan?: boolean
   keyboardShortcuts?: boolean
   touchGestures?: boolean
+  videoDownload?: boolean
 }
 
 export type ImageInspectorLabels = {

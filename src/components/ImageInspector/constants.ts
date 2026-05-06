@@ -25,6 +25,7 @@ export const DEFAULT_FEATURES: ResolvedImageInspectorFeatures = {
   dragPan: true,
   keyboardShortcuts: true,
   touchGestures: true,
+  videoDownload: true,
 }
 
 export const DEFAULT_LABELS: Required<ImageInspectorLabels> = {

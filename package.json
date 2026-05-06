@@ -66,5 +66,13 @@
     "typescript",
     "lightweight"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moaelkady/react-image-inspector.git"
+  },
+  "bugs": {
+    "url": "https://github.com/moaelkady/react-image-inspector/issues"
+  },
+  "homepage": "https://github.com/moaelkady/react-image-inspector#readme",
   "license": "MIT"
 }

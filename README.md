@@ -1,11 +1,13 @@
 # react-image-inspector
 
-A lightweight React + TypeScript image viewer/inspector package with zoom, rotation, flips, optional toolbar/thumbnails, theme support, and a magnifying lens.  
+A lightweight React + TypeScript media viewer for images and videos with zoom, rotation, flips, optional toolbar/thumbnails, theme support, and a magnifying lens for images.
 No external image-viewer dependency is used.
 
 ## Features
 
 - Single image mode (`src`) and gallery mode (`images`)
+- Mixed media gallery support (`image` + `video`)
+- Video playback (`<video controls>`) with an optional video download button
 - Zoom in/out/reset + wheel zoom + double-click zoom
 - Rotate left/right, flip horizontal/vertical, reset all
 - Optional magnifier lens
@@ -27,29 +29,62 @@ npm install react-image-inspector
 ## Basic usage (single image)
 
 ```tsx
-import { ImageInspector } from 'react-image-inspector'
-import 'react-image-inspector/styles.css'
+import { ImageInspector } from "react-image-inspector";
+import "react-image-inspector/styles.css";
 
 export function Example() {
-  return <ImageInspector src="/document.png" alt="Document image" />
+  return <ImageInspector src="/document.png" alt="Document image" />;
 }
 ```
 
 ## Gallery usage
 
 ```tsx
-import { ImageInspector } from 'react-image-inspector'
-import 'react-image-inspector/styles.css'
+import { ImageInspector } from "react-image-inspector";
+import "react-image-inspector/styles.css";
 
 const images = [
-  { src: '/front.png', alt: 'Front side', title: 'Front side' },
-  { src: '/back.png', alt: 'Back side', title: 'Back side' },
-]
+  { src: "/front.png", alt: "Front side", title: "Front side" },
+  { src: "/back.png", alt: "Back side", title: "Back side" },
+];
 
 export function Example() {
-  return <ImageInspector images={images} theme="dark" primaryColor="#14b8a6" />
+  return <ImageInspector images={images} theme="dark" primaryColor="#14b8a6" />;
 }
 ```
+
+## Mixed media usage (images + video)
+
+```tsx
+import { ImageInspector } from "react-image-inspector";
+import "react-image-inspector/styles.css";
+
+const media = [
+  {
+    src: "/front.png",
+    alt: "Front side",
+    title: "Front side",
+    type: "image" as const,
+  },
+  {
+    src: "https://example.com/selfie.mp4",
+    type: "video" as const,
+    title: "Selfie video",
+    poster: "/video-poster.jpg",
+    downloadName: "selfie.mp4",
+  },
+];
+
+export function Example() {
+  return <ImageInspector images={media} />;
+}
+```
+
+Video notes:
+
+- Video slides are view-only (no magnifier, zoom, rotate, flip, or drag-pan controls).
+- Images and videos are loaded directly from their source URLs (no package-level prefetch request).
+- Video download button is enabled by default and can be disabled with `features.videoDownload = false`.
 
 ## Disable tools/features
 
@@ -61,6 +96,7 @@ export function Example() {
     rotateLeft: false,
     flipVertical: false,
     thumbnails: false,
+    videoDownload: false,
   }}
 />
 ```
@@ -78,7 +114,7 @@ export function Example() {
 
 - `src?: string` single-image source
 - `alt?: string` single-image alt text
-- `images?: ViewerImage[]` gallery images (takes precedence over `src`)
+- `images?: ViewerImage[]` gallery media entries (takes precedence over `src`)
 - `initialIndex?: number`
 - `theme?: 'light' | 'dark' | 'system'` (default: `system`)
 - `primaryColor?: string`
@@ -101,6 +137,7 @@ All features are enabled by default. Parent feature flags disable child actions:
 - `rotate=false` disables `rotateLeft`, `rotateRight`
 - `flip=false` disables `flipHorizontal`, `flipVertical`
 - `dragPan=false` disables pointer drag-to-pan while zoomed
+- `videoDownload=false` hides the video download button
 
 Toolbar and thumbnail aliases:
 
@@ -145,6 +182,11 @@ Magnifier loading behavior:
 
 - Pinch-to-zoom is not implemented yet (future enhancement).
 - Magnifier is intentionally hidden when image rotation or flip is active, because exact mapped lens behavior for transformed states is not implemented yet.
+- Media URLs must be directly accessible by the browser in your environment (CSP/CORS/server headers may still block playback outside the package).
+
+## Repository
+
+- GitHub: [moaelkady/react-image-inspector](https://github.com/moaelkady/react-image-inspector)
 
 ## Local development
 

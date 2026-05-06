@@ -80,6 +80,29 @@ describe('ImageInspector', () => {
     })
   })
 
+  it('hides video download button when feature is disabled', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const root = createRoot(host)
+
+    await act(async () => {
+      root.render(
+        <ImageInspector
+          images={[{ type: 'video', src: 'https://cdn.example.com/video.mp4' }]}
+          features={{ videoDownload: false }}
+        />,
+      )
+      await flush()
+    })
+
+    expect(host.querySelector('.rii__video-download')).toBeNull()
+
+    await act(async () => {
+      root.unmount()
+      await flush()
+    })
+  })
+
   it('does not prefetch signed video URLs and uses direct source for playback/download', async () => {
     const host = document.createElement('div')
     document.body.appendChild(host)

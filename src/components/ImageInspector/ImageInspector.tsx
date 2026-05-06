@@ -344,7 +344,7 @@ export function ImageInspector(props: ImageInspectorProps) {
         </div>
       ) : null}
 
-      {isVideo && downloadHref ? (
+      {isVideo && mediaFeatures.videoDownload && downloadHref ? (
         <div className="rii__video-actions">
           <a
             className="rii__button rii__video-download"
